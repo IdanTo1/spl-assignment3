@@ -6,22 +6,23 @@ import bgu.spl.net.srv.Server;
 public class StompServer {
 
     public static void main(String[] args) {
-        if(args.length != 2)
+        if(args.length != 3)
         {
-            System.out.println("Usage - StompServer.java localhost port");
+           throw new IllegalArgumentException("Usage - StompServer.java host port server_type");
         }
-        Server s;
-        if(args[1].equals("tpc")) {
+        Server s = null;
+        if(args[2].equals("tpc")) {
             s = Server.threadPerClient(Integer.parseInt(args[1]),
                     () -> new LibraryProtocol(),
                     ()-> new StompEncDec());
         }
-        else if(args[1].equals("reactor")) {
+        else if(args[2].equals("reactor")) {
             s = Server.reactor(4, // TODO: Check how many threads should be used
                     Integer.parseInt(args[1]),
                     () -> new LibraryProtocol(),
                     () -> new StompEncDec());
         }
+        s.serve();
 
     }
 

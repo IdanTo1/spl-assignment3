@@ -5,14 +5,22 @@ import java.util.Map;
 
 public class Frame {
     public enum Command {
-            SEND, MESSAGE, CONNECT, CONNECTED, RECEIPT, ERROR, SUBSCRIBE, UNSUBSCRIBE, DISCONNECT
+        SEND, MESSAGE, CONNECT, CONNECTED, RECEIPT, ERROR, SUBSCRIBE, UNSUBSCRIBE, DISCONNECT
     }
+
     private Command _command;
     private Map<String, String> _headers;
     private String _body;
+
     public Frame(String command) {
         _command = Command.valueOf(command);
         _headers = new HashMap<>();
+    }
+
+    public Frame(String command, String body) {
+        _command = Command.valueOf(command);
+        _headers = new HashMap<>();
+        _body = body;
     }
 
     public void addHeader(String header, String value) {
@@ -27,14 +35,26 @@ public class Frame {
         return _body;
     }
 
-    public Map<String, String> getHeader() {
+    public Map<String, String> getHeaders() {
         return _headers;
+    }
+
+    public String getHeader(String header) {
+        return _headers.get(header);
+    }
+
+    public Command getCommand() {
+        return _command;
     }
 
     @Override
     public String toString() {
-        String s = _command.name() + "\n";
-        for(Pair<String, String> header : _headers.)
+        StringBuilder s = new StringBuilder(_command.name() + "\n");
+        for (Map.Entry<String, String> header : _headers.entrySet()) {
+            s.append(header.getKey()).append(":").append(header.getValue());
+        }
+        s.append(_body);
+        return s.toString();
     }
 
 }

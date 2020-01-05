@@ -18,20 +18,25 @@ public class StompEncDec implements MessageEncoderDecoder<Frame> {
         Frame parsed = null;
         do {
             prevDelim = delim;
-            delim = msg.indexOf("\n", prevDelim);
+            delim = msg.indexOf("\n", prevDelim+1);
             if (msgPart == 1) {
                 parsed = new Frame(msg.substring(0, delim));
+                msgPart++;
             }
-            if (msgPart == 2) {
+            else if (msgPart == 2) {
                 int mid = msg.indexOf(":", prevDelim);
+                if(mid == -1) {
+                    msgPart++;
+                    continue;
+                }
                 parsed.addHeader(msg.substring(prevDelim + 1, mid), msg.substring(mid + 1, delim));
             }
-            if (msgPart == 3) {
+            else if (msgPart == 3) {
                 // -2 so we don't include the \n or the \0
-                parsed.addBody(msg.substring(prevDelim + 1, msg.length() - 2));
+                parsed.addBody(msg.substring(prevDelim + 1));
                 return parsed;
             }
-            msgPart++;
+
 
         } while (delim < msg.length());
         return null; // Impossible
