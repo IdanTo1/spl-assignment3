@@ -26,7 +26,7 @@ public class LibraryProtocol implements StompMessagingProtocol<Frame> {
 
     @Override
     public void process(Frame msg) {
-        switch(msg.getCommand()) {
+        switch (msg.getCommand()) {
             case CONNECT:
                 handleConnect(msg);
                 break;
@@ -36,33 +36,32 @@ public class LibraryProtocol implements StompMessagingProtocol<Frame> {
         }
     }
 
-    private void handleSend(Frame msg) {
 
+    private void handleSend(Frame msg) {
+        // TODO: Complete
     }
 
-    private void handleConnect(Frame msg) {
-        if(!msg.getHeader("accept-version").equals("1.2")){
-            _shouldTerminate = true;
-            _connections.send(_connectionId, new Frame("ERROR", "Wrong Version"));
-        }
-        else if((_client = clientsByLogin.get(msg.getHeader("login"))) == null) {
+    private Frame handleConnect(Frame msg) {
+        Frame f = new Frame();
+        if ((_client = clientsByLogin.get(msg.getHeader("login"))) == null) {
             _client = new Client(msg.getHeader("host"), msg.getHeader("login"), msg.getHeader("passcode"));
             clientsByLogin.put(_client.login, _client);
-            sendConnectedFrame();
-        }
-        else if(_client.passcode.equals(msg.getHeader("passcode"))) {
-            sendConnectedFrame();
-        }
-        else {
+            f = createConnectedFrame();
+        } else if (_client.passcode.equals(msg.getHeader("passcode"))) {
+            f = createConnectedFrame();
+        } else {
+            f.setCommand("ERROR");
+            f.addHeader("message", "Wrong password");
+            _connections.send(_connectionId, f);
             _shouldTerminate = true;
-            _connections.send(_connectionId, new Frame("ERROR", "Wrong password"));
         }
+        return addReceipt(msg, f);
     }
 
-    private void sendConnectedFrame() {
+    private Frame createConnectedFrame() {
         Frame frame = new Frame("CONNECTED");
         frame.addHeader("version", "1.2");
-        _connections.send(_connectionId, frame);
+        return frame;
     }
 
     @Override
