@@ -53,7 +53,7 @@ public class Frame {
         for (Map.Entry<String, String> header : _headers.entrySet()) {
             s.append(header.getKey()).append(":").append(header.getValue());
         }
-        s.append(_body);
+        s.append(_body == null ? "" : _body);
         return s.toString();
     }
 

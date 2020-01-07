@@ -15,16 +15,21 @@ public abstract class BaseServer<T> implements Server<T> {
     private final Supplier<StompMessagingProtocol<T>> protocolFactory;
     private final Supplier<MessageEncoderDecoder<T>> encdecFactory;
     private ServerSocket sock;
+    private int currentId;
+    private Connections<T> connections;
 
     public BaseServer(
             int port,
             Supplier<StompMessagingProtocol<T>> protocolFactory,
-            Supplier<MessageEncoderDecoder<T>> encdecFactory) {
+            Supplier<MessageEncoderDecoder<T>> encdecFactory,
+            Connections<T> connections) {
 
         this.port = port;
         this.protocolFactory = protocolFactory;
         this.encdecFactory = encdecFactory;
 		this.sock = null;
+		this.connections = connections;
+		this.currentId = 0;
     }
 
     @Override
@@ -39,12 +44,20 @@ public abstract class BaseServer<T> implements Server<T> {
 
                 Socket clientSock = serverSock.accept();
 
+                StompMessagingProtocol<T> p = protocolFactory.get();
+
+
                 BlockingConnectionHandler<T> handler = new BlockingConnectionHandler<>(
                         clientSock,
                         encdecFactory.get(),
-                        protocolFactory.get());
+                        p);
+
+                p.start(currentId, connections);
+                connections.connect(handler, currentId);
 
                 execute(handler);
+
+                currentId++;
             }
         } catch (IOException ex) {
         }

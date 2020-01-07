@@ -46,9 +46,7 @@ public class ConnectionsImpl<T> implements Connections<T> {
     @Override
     public void subscribe(String channel, int connectionId) {
         synchronized (this) {
-            if(_channels.get(channel) == null) {
-                _channels.put(channel, new ArrayList<>());
-            }
+            _channels.computeIfAbsent(channel, k -> new ArrayList<>());
         }
         _channels.get(channel).add(connectionId);
     }
