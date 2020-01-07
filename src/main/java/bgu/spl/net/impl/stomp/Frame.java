@@ -3,6 +3,10 @@ package bgu.spl.net.impl.stomp;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * This class represents the frame that can be sent either way in the server-client connection.
+ * It contains all the information represented by a generic stomp frame, as Java data structures
+ */
 public class Frame {
     public enum Command {
         SEND, MESSAGE, CONNECT, CONNECTED, RECEIPT, ERROR, SUBSCRIBE, UNSUBSCRIBE, DISCONNECT
@@ -59,6 +63,11 @@ public class Frame {
         return _command;
     }
 
+    /**
+     *
+     * @return The string representation of the Frame, as required to be sent by the server (without the null character
+     * at the end, which will be added by the server
+     */
     @Override
     public String toString() {
         StringBuilder s = new StringBuilder(_command.name() + "\n");

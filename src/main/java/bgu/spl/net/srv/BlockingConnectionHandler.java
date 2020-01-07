@@ -35,6 +35,8 @@ public class BlockingConnectionHandler<T> implements Runnable, ConnectionHandler
             while (!protocol.shouldTerminate() && connected && (read = in.read()) >= 0) {
                 T nextMessage = encdec.decodeNextByte((byte) read);
                 if (nextMessage != null) {
+                    // Now we don't get a response, because the server can initiate a message we separate it
+                    // from the protocol process()
                     protocol.process(nextMessage);
                 }
             }
@@ -53,7 +55,8 @@ public class BlockingConnectionHandler<T> implements Runnable, ConnectionHandler
 
     @Override
     public void send(T msg) {
-        try { //just for automatic closing
+        try {
+            // Same as the old implementation, because this is blocking we don't have concurrency issues
             out.write(encdec.encode(msg));
             out.flush();
         } catch (IOException e) {

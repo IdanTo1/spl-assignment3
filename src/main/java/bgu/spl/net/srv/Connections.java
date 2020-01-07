@@ -10,7 +10,9 @@ public interface Connections<T> {
 
     void disconnect(int connectionId);
 
-    void subscribe(String channel, int connectionId);
+    // Required even for the most generic implementation
+    void subscribe(String channel, int connectionId, int subscriptionId);
 
+    // Required even for the most generic implementation
     void connect(ConnectionHandler<T> connectionHandler, int connectionId);
 }

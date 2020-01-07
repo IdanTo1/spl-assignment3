@@ -12,25 +12,30 @@ public class StompEncDec implements MessageEncoderDecoder<Frame> {
     private byte[] bytes = new byte[1 << 10]; //start with 1k
     private int len = 0;
 
+    /**
+     *   Converts a String to the Frame object representing it
+     * @param msg The message as a string
+     * @return The Frame representation
+     */
     private Frame parseMessage(String msg) {
         int delim = 0, prevDelim = 0;
         int msgPart = 1;
         Frame parsed = null;
         do {
             prevDelim = delim;
-            delim = msg.indexOf("\n", prevDelim+1);
-            if (msgPart == 1) {
+            delim = msg.indexOf("\n", prevDelim+1); // Find the end of the next line
+            if (msgPart == 1) { // The command
                 parsed = new Frame(msg.substring(0, delim));
                 msgPart++;
             }
-            else if (msgPart == 2) {
+            else if (msgPart == 2) { // headers
                 int mid = msg.indexOf(":", prevDelim);
                 if(mid == -1) {
                     msgPart++;
                     continue;
                 }
                 parsed.addHeader(msg.substring(prevDelim + 1, mid), msg.substring(mid + 1, delim));
-            }
+            } // Body and return
             else if (msgPart == 3) {
                 // -2 so we don't include the \n or the \0
                 parsed.addBody(msg.substring(prevDelim + 1));

@@ -50,6 +50,8 @@ public class NonBlockingConnectionHandler<T> implements ConnectionHandler<T> {
                     while (buf.hasRemaining()) {
                         T nextMessage = encdec.decodeNextByte(buf.get());
                         if (nextMessage != null) {
+                            // Since the server can initiate a message sending, we no longer want the get-respond scheme
+                            // that was implemented before
                             protocol.process(nextMessage);
                         }
                     }
@@ -115,6 +117,7 @@ public class NonBlockingConnectionHandler<T> implements ConnectionHandler<T> {
 
     @Override
     public void send(T msg) {
+        // Add to the queue and the reactor will deal with it when it can
         writeQueue.add(ByteBuffer.wrap(encdec.encode(msg)));
         reactor.updateInterestedOps(chan, SelectionKey.OP_READ | SelectionKey.OP_WRITE);
     }

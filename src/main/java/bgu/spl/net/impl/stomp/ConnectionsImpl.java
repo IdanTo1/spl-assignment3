@@ -11,6 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ConnectionsImpl implements Connections<Frame> {
 
     private ConcurrentHashMap<Integer, ConnectionHandler<Frame>> _connections;
+    // SimpleEntry used as a Pair object
     private ConcurrentHashMap<String, List<AbstractMap.SimpleEntry<ConnectionHandler<Frame>, Integer>>> _channels;
 
     public ConnectionsImpl() {

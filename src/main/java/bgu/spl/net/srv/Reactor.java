@@ -102,14 +102,14 @@ public class Reactor<T> implements Server<T> {
     private void handleAccept(ServerSocketChannel serverChan, Selector selector) throws IOException {
         SocketChannel clientChan = serverChan.accept();
         clientChan.configureBlocking(false);
-        StompMessagingProtocol<T> p = protocolFactory.get();
+        StompMessagingProtocol<T> p = protocolFactory.get(); // Save the protocol for later local usage
         final NonBlockingConnectionHandler<T> handler = new NonBlockingConnectionHandler<>(
                 readerFactory.get(),
                 p,
                 clientChan,
                 this);
-        p.start(currentId, connections);
-        connections.connect(handler, currentId);
+        p.start(currentId, connections); // Start the protocol
+        connections.connect(handler, currentId); // Connect the handler with the connections object
         currentId++;
         clientChan.register(selector, SelectionKey.OP_READ, handler);
     }
