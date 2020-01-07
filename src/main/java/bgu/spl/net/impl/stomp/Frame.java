@@ -12,15 +12,27 @@ public class Frame {
     private Map<String, String> _headers;
     private String _body;
 
+    public Frame() {
+        _headers = new HashMap<>();
+    }
+
     public Frame(String command) {
         _command = Command.valueOf(command);
         _headers = new HashMap<>();
     }
 
-    public Frame(String command, String body) {
+    public Frame(String command, String body) { // Comfortable usage for quickly creating a Frame
         _command = Command.valueOf(command);
         _headers = new HashMap<>();
         _body = body;
+    }
+
+    public void setCommand(String command) {
+        _command = Command.valueOf(command);
+    }
+
+    public void setCommand(Command command) {
+        _command = command;
     }
 
     public void addHeader(String header, String value) {
@@ -55,6 +67,14 @@ public class Frame {
         }
         s.append(_body == null ? "" : _body);
         return s.toString();
+    }
+
+    public Frame clone() {
+        Frame f = new Frame();
+        f.setCommand(_command);
+        f.addBody(_body);
+        f.getHeaders().putAll(_headers);
+        return f;
     }
 
 }
