@@ -24,7 +24,7 @@ public class LibraryProtocol implements StompMessagingProtocol<Frame> {
     public void process(Frame msg) {
         switch (msg.getCommand()) {
             case CONNECT:
-                handleConnect(msg);
+                _connections.send(_connectionId, handleConnect(msg));
                 break;
             case SEND:
                 handleSend(msg);
