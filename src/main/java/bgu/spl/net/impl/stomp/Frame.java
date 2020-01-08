@@ -72,16 +72,14 @@ public class Frame {
     public String toString() {
         StringBuilder s = new StringBuilder(_command.name() + "\n");
         for (Map.Entry<String, String> header : _headers.entrySet()) {
-            s.append(header.getKey()).append(":").append(header.getValue());
+            s.append(header.getKey()).append(":").append(header.getValue()).append("\n");
         }
-        s.append(_body == null ? "" : _body);
+        s.append("\n").append(_body == null ? "" : _body);
         return s.toString();
     }
 
     public Frame clone() {
-        Frame f = new Frame();
-        f.setCommand(_command);
-        f.addBody(_body);
+        Frame f = new Frame(_command.name(), _body);
         f.getHeaders().putAll(_headers);
         return f;
     }
