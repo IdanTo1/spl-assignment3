@@ -11,8 +11,9 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ConnectionsImpl implements Connections<Frame> {
 
     private ConcurrentHashMap<Integer, ConnectionHandler<Frame>> _connections;
-    // SimpleEntry used as a Pair object
-    private ConcurrentHashMap<String, List<AbstractMap.SimpleEntry<ConnectionHandler<Frame>, Integer>>> _channels;
+    // SimpleEntry used as a Pair object, _channels contains a map from the channel name to the pair
+    // (User Id, Subscription Id) which is the unique key of a subscription (as stated in forum)
+    private ConcurrentHashMap<String, List<AbstractMap.SimpleEntry<Integer, Integer>>> _channels;
 
     public ConnectionsImpl() {
         _connections = new ConcurrentHashMap<>();
@@ -38,14 +39,14 @@ public class ConnectionsImpl implements Connections<Frame> {
 
     @Override
     public void send(String channel, Frame msg) {
-        for(AbstractMap.SimpleEntry<ConnectionHandler<Frame>, Integer> sub : _channels.get(channel)) {
-            sub.getKey().send(addSubscriptionId(msg, sub.getValue())); // Send the message with the subscription header
+        for(AbstractMap.SimpleEntry<Integer, Integer> sub : _channels.get(channel)) {
+            this.send(sub.getKey(), addSubscriptionId(msg, sub.getValue())); // Send the message with the subscription header
         }
     }
 
     @Override
     public void disconnect(int connectionId) {
-        for(List<AbstractMap.SimpleEntry<ConnectionHandler<Frame>, Integer>> topic : _channels.values()) {
+        for(List<AbstractMap.SimpleEntry<Integer, Integer>> topic : _channels.values()) {
             topic.remove(connectionId);
         }
         _connections.remove(connectionId);
@@ -53,10 +54,12 @@ public class ConnectionsImpl implements Connections<Frame> {
 
     @Override
     public void subscribe(String channel, int connectionId, int subscriptionId) {
-        synchronized (this) {
-            _channels.computeIfAbsent(channel, k -> new ArrayList<>());
+        if(_channels.get(channel) == null) {
+            synchronized (this) {
+                _channels.computeIfAbsent(channel, k -> new ArrayList<>());
+            }
         }
-        _channels.get(channel).add(new AbstractMap.SimpleEntry<>(_connections.get(connectionId), subscriptionId));
+        _channels.get(channel).add(new AbstractMap.SimpleEntry<>(connectionId, subscriptionId));
     }
 
     @Override
