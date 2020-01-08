@@ -15,14 +15,14 @@ public class StompServer {
             s = Server.threadPerClient(Integer.parseInt(args[1]),
                     () -> new LibraryProtocol(),
                     ()-> new StompEncDec(),
-                    new ConnectionsImpl<>());
+                    new ConnectionsImpl());
         }
         else if(args[2].equals("reactor")) {
             s = Server.reactor(4, // TODO: Check how many threads should be used
                     Integer.parseInt(args[1]),
                     () -> new LibraryProtocol(),
                     () -> new StompEncDec(),
-                    new ConnectionsImpl<>());
+                    new ConnectionsImpl());
         }
         s.serve();
 
