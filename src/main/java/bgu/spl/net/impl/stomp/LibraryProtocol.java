@@ -13,6 +13,7 @@ public class LibraryProtocol implements StompMessagingProtocol<Frame> {
     private Client _client;
     private int _connectionId;
     private Connections<Frame> _connections;
+    private Integer _messagesSent;
 
     @Override
     public void start(int connectionId, Connections<Frame> connections) {
@@ -24,34 +25,99 @@ public class LibraryProtocol implements StompMessagingProtocol<Frame> {
     public void process(Frame msg) {
         switch (msg.getCommand()) {
             case CONNECT:
-                _connections.send(_connectionId, handleConnect(msg));
+                handleConnect(msg);
                 break;
             case SEND:
                 handleSend(msg);
+                break;
+            case SUBSCRIBE:
+                handleSubscribe(msg);
+                break;
+            case UNSUBSCRIBE:
+                handleUnsubscribe(msg);
                 break;
             // TODO: Add the rest of the handling. For all of the commands
         }
     }
 
     /**
-     *  Adds a receipt id needed according to {@code msg}'s headers
-     * @param msg the received message
-     * @param newFrame the currently building frame
-     * @return the newFrame with the receipt, this is also in-place but this is useful
+     *  This function checks for the existence of the header {@code header}, if it doesn't exist the function sends the
+     *  proper error Frame
+     * @param msg The Frame to check for the header
+     * @param header The header to be checked for existence
+     * @return Does the header exist
      */
-    private Frame addReceipt(Frame msg, Frame newFrame) {
-        String receiptId = msg.getHeader("receipt");
-        if(receiptId != null) {
-            newFrame.addHeader("receiptId", "message-"+receiptId);
+    private boolean checkForHeader(Frame msg, String header, String info) {
+        if(msg.getHeader(header) == null) {
+            Frame f = createErrorFrame("MalFormed Frame - missing " + header +" header");
+            if(info != null) addErrorBody(msg, f, info);
+            _connections.send(_connectionId,
+                    f);
+            return false;
         }
-        return newFrame;
+        return true;
+    }
+
+    private boolean checkForHeader(Frame msg, String header) {
+        return checkForHeader(msg, header, null);
+    }
+
+    private void handleSubscribe(Frame msg) {
+        if(!checkForHeader(msg, "destination")) return;
+        if(!checkForHeader(msg, "id")) return;
+        _connections.subscribe(msg.getHeader("destination"), _connectionId, Integer.parseInt(msg.getHeader("id")));
+        sendReceipt(msg);
+    }
+
+    private void handleUnsubscribe(Frame msg) {
+        if(!checkForHeader(msg, "id")) return;
+        try {
+            _connections.unsubscribe(msg.getHeader("destination"), _connectionId, Integer.parseInt(msg.getHeader("id")));
+        }
+        // We ignore a NullPointer exception because one will be thrown if the subscriptionId doesn't exist
+        catch (NullPointerException ignored) {}
+        sendReceipt(msg);
+    }
+
+    /**
+     * Adds a receipt id needed according to {@code msg}'s headers
+     *
+     * @param msg      the received message
+     */
+    private void sendReceipt(Frame msg) {
+        String receiptId = msg.getHeader("receipt");
+        if (receiptId != null) {
+            Frame newFrame = new Frame("RECEIPT");
+            newFrame.addHeader("receipt-id", "message-" + receiptId);
+        }
+    }
+
+    private Frame createErrorFrame(String message) {
+        Frame f = new Frame("ERROR");
+        f.addHeader("message", message);
+        return f;
+    }
+
+    private Frame createMessageFrame(Frame msg) {
+        Frame f = new Frame("MESSAGE");
+        f.addHeader("Message-id", _messagesSent.toString());
+        _messagesSent++;
+        f.addHeader("destination", msg.getHeader("destination"));
+        f.addBody(msg.getBody());
+        return f;
     }
 
     private void handleSend(Frame msg) {
-        // TODO: Complete
+        if (!checkForHeader(msg, "destination")) return;
+        _connections.send(msg.getHeader("destination"), createMessageFrame(msg));
+        sendReceipt(msg);
     }
 
-    private Frame handleConnect(Frame msg) {
+    private void addErrorBody(Frame msg, Frame errorFrame, String info) {
+        errorFrame.addBody("The message:\n-----"+msg.toString()+"\n-----\n"+info);
+    }
+
+    private void handleConnect(Frame msg) {
         Frame f = new Frame();
         if ((_client = clientsByLogin.get(msg.getHeader("login"))) == null) {
             _client = new Client(msg.getHeader("host"), msg.getHeader("login"), msg.getHeader("passcode"));
@@ -62,10 +128,13 @@ public class LibraryProtocol implements StompMessagingProtocol<Frame> {
         } else {
             f.setCommand("ERROR");
             f.addHeader("message", "Wrong password");
+            String receiptId = null;
+            if((receiptId = msg.getHeader("receipt")) != null) f.addHeader("receipt-id", receiptId);
             _connections.send(_connectionId, f);
             _shouldTerminate = true;
         }
-        return addReceipt(msg, f);
+        sendReceipt(msg);
+        _connections.send(_connectionId, f);
     }
 
     private Frame createConnectedFrame() {

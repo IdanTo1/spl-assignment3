@@ -15,4 +15,6 @@ public interface Connections<T> {
 
     // Required even for the most generic implementation
     void connect(ConnectionHandler<T> connectionHandler, int connectionId);
+
+    void unsubscribe(String channel, int connectionId, int subscriptionId);
 }

@@ -66,4 +66,10 @@ public class ConnectionsImpl implements Connections<Frame> {
     public void connect(ConnectionHandler<Frame> connectionHandler, int connectionId) {
         _connections.put(connectionId, connectionHandler);
     }
+
+    @Override
+    public void unsubscribe(String channel, int connectionId, int subscriptionId) {
+        // SimpleEntry is comparable and implements a deep compare
+        _channels.get(channel).remove(new AbstractMap.SimpleEntry<>(connectionId, subscriptionId));
+    }
 }
