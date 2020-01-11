@@ -36,8 +36,17 @@ public class LibraryProtocol implements StompMessagingProtocol<Frame> {
             case UNSUBSCRIBE:
                 handleUnsubscribe(msg);
                 break;
-            // TODO: Add the rest of the handling. For all of the commands
+            case DISCONNECT:
+                handleDisconnect(msg);
+                break;
         }
+    }
+
+    private void handleDisconnect(Frame msg) {
+        sendReceipt(msg);
+        _connections.disconnect(_connectionId);
+        _client.connected = false;
+        _shouldTerminate = true;
     }
 
     /**
@@ -123,6 +132,14 @@ public class LibraryProtocol implements StompMessagingProtocol<Frame> {
             _client = new Client(msg.getHeader("host"), msg.getHeader("login"), msg.getHeader("passcode"));
             clientsByLogin.put(_client.login, _client);
             f = createConnectedFrame();
+        } else if(_client.connected) {
+            f.setCommand("ERROR");
+            f.addHeader("message", "User already logged in");
+            String receiptId = null;
+            if((receiptId = msg.getHeader("receipt")) != null) f.addHeader("receipt-id", receiptId);
+            f.addBody("User already logged in");
+            _connections.send(_connectionId, f);
+            _shouldTerminate = true;
         } else if (_client.passcode.equals(msg.getHeader("passcode"))) {
             f = createConnectedFrame();
         } else {
@@ -130,9 +147,11 @@ public class LibraryProtocol implements StompMessagingProtocol<Frame> {
             f.addHeader("message", "Wrong password");
             String receiptId = null;
             if((receiptId = msg.getHeader("receipt")) != null) f.addHeader("receipt-id", receiptId);
+            f.addBody("Wrong Password");
             _connections.send(_connectionId, f);
             _shouldTerminate = true;
         }
+        _client.connected = true;
         sendReceipt(msg);
         _connections.send(_connectionId, f);
     }

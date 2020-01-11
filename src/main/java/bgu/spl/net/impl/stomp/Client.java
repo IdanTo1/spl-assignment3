@@ -9,6 +9,7 @@ public class Client {
     public String host;
     public String login;
     public String passcode;
+    public boolean connected;
 
     public Client() {
 
@@ -18,6 +19,7 @@ public class Client {
         this.host = host;
         this.login = login;
         this.passcode = passcode;
+        this.connected = false;
     }
     @Override
     public boolean equals(Object o) {
