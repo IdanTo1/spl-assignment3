@@ -98,6 +98,7 @@ public class LibraryProtocol implements StompMessagingProtocol<Frame> {
         if (receiptId != null) {
             Frame newFrame = new Frame("RECEIPT");
             newFrame.addHeader("receipt-id", "message-" + receiptId);
+            _connections.send(_connectionId, newFrame);
         }
     }
 
