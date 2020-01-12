@@ -11,6 +11,7 @@ public class StompEncDec implements MessageEncoderDecoder<Frame> {
 
     private byte[] bytes = new byte[1 << 10]; //start with 1k
     private int len = 0;
+    private static final char delimiter = '\n';
 
     /**
      *   Converts a String to the Frame object representing it
@@ -23,28 +24,26 @@ public class StompEncDec implements MessageEncoderDecoder<Frame> {
         Frame parsed = null;
         do {
             prevDelim = delim;
-            delim = msg.indexOf("\n", prevDelim+1); // Find the end of the next line
+            delim = msg.indexOf(delimiter, prevDelim+1); // Find the end of the next line
             if (msgPart == 1) { // The command
                 parsed = new Frame(msg.substring(0, delim));
                 msgPart++;
             }
             else if (msgPart == 2) { // headers
                 int mid = msg.indexOf(":", prevDelim);
-                if(mid == -1) {
+                if(mid == -1) { // No more headers
                     msgPart++;
                     continue;
                 }
                 parsed.addHeader(msg.substring(prevDelim + 1, mid), msg.substring(mid + 1, delim));
             } // Body and return
             else if (msgPart == 3) {
-                // -2 so we don't include the \n or the \0
                 parsed.addBody(msg.substring(prevDelim + 1));
-                return parsed;
             }
 
 
-        } while (delim < msg.length());
-        return null; // Impossible
+        } while (delim < msg.length() && msgPart <= 3);
+        return parsed;
     }
 
     @Override
@@ -56,7 +55,7 @@ public class StompEncDec implements MessageEncoderDecoder<Frame> {
         }
 
         pushByte(nextByte);
-        return null; //not a line yet
+        return null; //not a frame yet
     }
 
     @Override
