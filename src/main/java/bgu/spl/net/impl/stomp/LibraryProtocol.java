@@ -19,6 +19,7 @@ public class LibraryProtocol implements StompMessagingProtocol<Frame> {
     public void start(int connectionId, Connections<Frame> connections) {
         _connectionId = connectionId;
         _connections = connections;
+        _messagesSent = 0;
     }
 
     @Override

@@ -24,8 +24,7 @@ public class ConnectionsImpl implements Connections<Frame> {
     public boolean send(int connectionId, Frame msg) {
         try {
             _connections.get(connectionId).send(msg);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             return false;
         }
         return true;
@@ -39,22 +38,23 @@ public class ConnectionsImpl implements Connections<Frame> {
 
     @Override
     public void send(String channel, Frame msg) {
-        for(AbstractMap.SimpleEntry<Integer, Integer> sub : _channels.get(channel)) {
+        for (AbstractMap.SimpleEntry<Integer, Integer> sub : _channels.get(channel)) {
             this.send(sub.getKey(), addSubscriptionId(msg, sub.getValue())); // Send the message with the subscription header
         }
     }
 
     @Override
     public void disconnect(int connectionId) {
-        for(List<AbstractMap.SimpleEntry<Integer, Integer>> topic : _channels.values()) {
-            topic.remove(connectionId);
+        for (List<AbstractMap.SimpleEntry<Integer, Integer>> topic : _channels.values()) {
+            if (topic.get(connectionId) != null)
+                topic.remove(connectionId);
         }
         _connections.remove(connectionId);
     }
 
     @Override
     public void subscribe(String channel, int connectionId, int subscriptionId) {
-        if(_channels.get(channel) == null) {
+        if (_channels.get(channel) == null) {
             synchronized (this) { // We sync on the entire object because the channel is null and we can't sync on null
                 _channels.computeIfAbsent(channel, k -> new ArrayList<>());
             }
