@@ -55,7 +55,7 @@ public class ConnectionsImpl implements Connections<Frame> {
     @Override
     public void subscribe(String channel, int connectionId, int subscriptionId) {
         if(_channels.get(channel) == null) {
-            synchronized (this) {
+            synchronized (this) { // We sync on the entire object because the channel is null and we can't sync on null
                 _channels.computeIfAbsent(channel, k -> new ArrayList<>());
             }
         }

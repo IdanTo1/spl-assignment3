@@ -50,16 +50,17 @@ public class LibraryProtocol implements StompMessagingProtocol<Frame> {
     }
 
     /**
-     *  This function checks for the existence of the header {@code header}, if it doesn't exist the function sends the
-     *  proper error Frame
-     * @param msg The Frame to check for the header
+     * This function checks for the existence of the header {@code header}, if it doesn't exist the function sends the
+     * proper error Frame
+     *
+     * @param msg    The Frame to check for the header
      * @param header The header to be checked for existence
      * @return Does the header exist
      */
     private boolean checkForHeader(Frame msg, String header, String info) {
-        if(msg.getHeader(header) == null) {
-            Frame f = createErrorFrame("MalFormed Frame - missing " + header +" header");
-            if(info != null) addErrorBody(msg, f, info);
+        if (msg.getHeader(header) == null) {
+            Frame f = createErrorFrame("MalFormed Frame - missing " + header + " header");
+            if (info != null) addErrorBody(msg, f, info);
             _connections.send(_connectionId,
                     f);
             return false;
@@ -72,26 +73,27 @@ public class LibraryProtocol implements StompMessagingProtocol<Frame> {
     }
 
     private void handleSubscribe(Frame msg) {
-        if(!checkForHeader(msg, "destination")) return;
-        if(!checkForHeader(msg, "id")) return;
+        if (!checkForHeader(msg, "destination")) return;
+        if (!checkForHeader(msg, "id")) return;
         _connections.subscribe(msg.getHeader("destination"), _connectionId, Integer.parseInt(msg.getHeader("id")));
         sendReceipt(msg);
     }
 
     private void handleUnsubscribe(Frame msg) {
-        if(!checkForHeader(msg, "id")) return;
+        if (!checkForHeader(msg, "id")) return;
         try {
             _connections.unsubscribe(msg.getHeader("destination"), _connectionId, Integer.parseInt(msg.getHeader("id")));
         }
         // We ignore a NullPointer exception because one will be thrown if the subscriptionId doesn't exist
-        catch (NullPointerException ignored) {}
+        catch (NullPointerException ignored) {
+        }
         sendReceipt(msg);
     }
 
     /**
      * Adds a receipt id needed according to {@code msg}'s headers
      *
-     * @param msg      the received message
+     * @param msg the received message
      */
     private void sendReceipt(Frame msg) {
         String receiptId = msg.getHeader("receipt");
@@ -108,6 +110,13 @@ public class LibraryProtocol implements StompMessagingProtocol<Frame> {
         return f;
     }
 
+    /**
+     * Creates a message frame. Note that this doesn't add the subscription-id, which will be added by the
+     * Connections interface once the message gets sent
+     *
+     * @param msg The message received by the client which triggered the call to this function
+     * @return The message to be sent to the users in the channel (without the subscription-id)
+     */
     private Frame createMessageFrame(Frame msg) {
         Frame f = new Frame("MESSAGE");
         f.addHeader("Message-id", _messagesSent.toString());
@@ -124,9 +133,14 @@ public class LibraryProtocol implements StompMessagingProtocol<Frame> {
     }
 
     private void addErrorBody(Frame msg, Frame errorFrame, String info) {
-        errorFrame.addBody("The message:\n-----"+msg.toString()+"\n-----\n"+info);
+        errorFrame.addBody("The message:\n-----" + msg.toString() + "\n-----\n" + info);
     }
 
+    /**
+     * Disconnect and send the frame received as a parameter
+     *
+     * @param f The frame to be sent
+     */
     private void disconnectWithFrame(Frame f) {
         _connections.send(_connectionId, f);
         _connections.disconnect(_connectionId);
@@ -135,29 +149,28 @@ public class LibraryProtocol implements StompMessagingProtocol<Frame> {
 
     private void handleConnect(Frame msg) {
         Frame f = new Frame();
-        if ((_client = clientsByLogin.get(msg.getHeader("login"))) == null) {
+        if ((_client = clientsByLogin.get(msg.getHeader("login"))) == null) { // Is the user new?
             _client = new Client(msg.getHeader("host"), msg.getHeader("login"), msg.getHeader("passcode"));
             clientsByLogin.put(_client.login, _client);
-            f = createConnectedFrame();
-        } else if(_client.connected) {
+        } else if (_client.connected) { // Is the user already connected?
             f.setCommand("ERROR");
             f.addHeader("message", "User already logged in");
             String receiptId = null;
-            if((receiptId = msg.getHeader("receipt")) != null) f.addHeader("receipt-id", receiptId);
+            if ((receiptId = msg.getHeader("receipt")) != null) f.addHeader("receipt-id", receiptId);
             f.addBody("User already logged in");
             disconnectWithFrame(f);
             return;
-        } else if (_client.passcode.equals(msg.getHeader("passcode"))) {
-            f = createConnectedFrame();
-        } else {
+        } else if (!_client.passcode.equals(msg.getHeader("passcode"))) { // Is the password wrong?
             f.setCommand("ERROR");
             f.addHeader("message", "Wrong password");
             String receiptId = null;
-            if((receiptId = msg.getHeader("receipt")) != null) f.addHeader("receipt-id", receiptId);
+            if ((receiptId = msg.getHeader("receipt")) != null) f.addHeader("receipt-id", receiptId);
             f.addBody("Wrong Password");
             disconnectWithFrame(f);
             return;
         }
+        // If we got here then we have a user that needs to be connected
+        f = createConnectedFrame();
         _client.connected = true;
         sendReceipt(msg);
         _connections.send(_connectionId, f);
