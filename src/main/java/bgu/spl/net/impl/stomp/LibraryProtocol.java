@@ -127,6 +127,12 @@ public class LibraryProtocol implements StompMessagingProtocol<Frame> {
         errorFrame.addBody("The message:\n-----"+msg.toString()+"\n-----\n"+info);
     }
 
+    private void disconnectWithFrame(Frame f) {
+        _connections.send(_connectionId, f);
+        _connections.disconnect(_connectionId);
+        _shouldTerminate = true;
+    }
+
     private void handleConnect(Frame msg) {
         Frame f = new Frame();
         if ((_client = clientsByLogin.get(msg.getHeader("login"))) == null) {
@@ -139,8 +145,8 @@ public class LibraryProtocol implements StompMessagingProtocol<Frame> {
             String receiptId = null;
             if((receiptId = msg.getHeader("receipt")) != null) f.addHeader("receipt-id", receiptId);
             f.addBody("User already logged in");
-            _connections.send(_connectionId, f);
-            _shouldTerminate = true;
+            disconnectWithFrame(f);
+            return;
         } else if (_client.passcode.equals(msg.getHeader("passcode"))) {
             f = createConnectedFrame();
         } else {
@@ -149,8 +155,8 @@ public class LibraryProtocol implements StompMessagingProtocol<Frame> {
             String receiptId = null;
             if((receiptId = msg.getHeader("receipt")) != null) f.addHeader("receipt-id", receiptId);
             f.addBody("Wrong Password");
-            _connections.send(_connectionId, f);
-            _shouldTerminate = true;
+            disconnectWithFrame(f);
+            return;
         }
         _client.connected = true;
         sendReceipt(msg);
