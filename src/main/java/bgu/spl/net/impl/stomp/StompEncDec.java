@@ -4,8 +4,6 @@ import bgu.spl.net.api.MessageEncoderDecoder;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 
 public class StompEncDec implements MessageEncoderDecoder<Frame> {
 
@@ -14,7 +12,7 @@ public class StompEncDec implements MessageEncoderDecoder<Frame> {
     private static final char delimiter = '\n';
     private static final int COMMAND_PART = 0;
     private static final int HEADERS_PART = 1;
-    private static final int PARTS = 2;
+    private static final int BODY_PART = 2;
 
     /**
      *   Converts a String to the Frame object representing it
@@ -41,7 +39,7 @@ public class StompEncDec implements MessageEncoderDecoder<Frame> {
                 parsed.addHeader(msg.substring(prevDelim + 1, mid), msg.substring(mid + 1, delim));
             }
 
-        } while (delim < msg.length() && msgPart < PARTS);
+        } while (delim < msg.length() && msgPart < BODY_PART);
         parsed.addBody(msg.substring(prevDelim + 1));
         return parsed;
     }
