@@ -4,14 +4,15 @@ import bgu.spl.net.api.MessageEncoderDecoder;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 
 public class StompEncDec implements MessageEncoderDecoder<Frame> {
 
     private byte[] bytes = new byte[1 << 10]; //start with 1k
     private int len = 0;
     private static final char delimiter = '\n';
+    private static final int COMMAND_PART = 0;
+    private static final int HEADERS_PART = 1;
+    private static final int BODY_PART = 2;
 
     /**
      *   Converts a String to the Frame object representing it
@@ -20,29 +21,26 @@ public class StompEncDec implements MessageEncoderDecoder<Frame> {
      */
     private Frame parseMessage(String msg) {
         int delim = 0, prevDelim = 0;
-        int msgPart = 1;
+        int msgPart = COMMAND_PART;
         Frame parsed = null;
         do {
             prevDelim = delim;
             delim = msg.indexOf(delimiter, prevDelim+1); // Find the end of the next line
-            if (msgPart == 1) { // The command
+            if (msgPart == COMMAND_PART) { // The command
                 parsed = new Frame(msg.substring(0, delim));
                 msgPart++;
             }
-            else if (msgPart == 2) { // headers
+            else if (msgPart == HEADERS_PART) { // headers
                 int mid = msg.indexOf(":", prevDelim);
                 if(mid == -1) { // No more headers
                     msgPart++;
                     continue;
                 }
                 parsed.addHeader(msg.substring(prevDelim + 1, mid), msg.substring(mid + 1, delim));
-            } // Body and return
-            else if (msgPart == 3) {
-                parsed.addBody(msg.substring(prevDelim + 1));
             }
 
-
-        } while (delim < msg.length() && msgPart <= 3);
+        } while (delim < msg.length() && msgPart < BODY_PART);
+        parsed.addBody(msg.substring(prevDelim + 1));
         return parsed;
     }
 
