@@ -61,16 +61,15 @@ public class LibraryProtocol implements StompMessagingProtocol<Frame> {
     private boolean checkForHeader(Frame msg, String header, String info) {
         if (msg.getHeader(header) == null) {
             Frame f = createErrorFrame("MalFormed Frame - missing " + header + " header");
-            if (info != null) addErrorBody(msg, f, info);
-            _connections.send(_connectionId,
-                    f);
+            addErrorBody(msg, f, info);
+            _connections.send(_connectionId, f);
             return false;
         }
         return true;
     }
 
     private boolean checkForHeader(Frame msg, String header) {
-        return checkForHeader(msg, header, null);
+        return checkForHeader(msg, header, "");
     }
 
     private void handleSubscribe(Frame msg) {
@@ -82,12 +81,7 @@ public class LibraryProtocol implements StompMessagingProtocol<Frame> {
 
     private void handleUnsubscribe(Frame msg) {
         if (!checkForHeader(msg, "id")) return;
-        try {
-            _connections.unsubscribe(msg.getHeader("destination"), _connectionId, Integer.parseInt(msg.getHeader("id")));
-        }
-        // We ignore a NullPointer exception because one will be thrown if the subscriptionId doesn't exist
-        catch (NullPointerException ignored) {
-        }
+        _connections.unsubscribe(msg.getHeader("destination"), _connectionId, Integer.parseInt(msg.getHeader("id")));
         sendReceipt(msg);
     }
 
@@ -156,7 +150,7 @@ public class LibraryProtocol implements StompMessagingProtocol<Frame> {
         } else if (_client.connected) { // Is the user already connected?
             f.setCommand("ERROR");
             f.addHeader("message", "User already logged in");
-            String receiptId = null;
+            String receiptId;
             if ((receiptId = msg.getHeader("receipt")) != null) f.addHeader("receipt-id", receiptId);
             f.addBody("User already logged in");
             disconnectWithFrame(f);
@@ -164,7 +158,7 @@ public class LibraryProtocol implements StompMessagingProtocol<Frame> {
         } else if (!_client.passcode.equals(msg.getHeader("passcode"))) { // Is the password wrong?
             f.setCommand("ERROR");
             f.addHeader("message", "Wrong password");
-            String receiptId = null;
+            String receiptId;
             if ((receiptId = msg.getHeader("receipt")) != null) f.addHeader("receipt-id", receiptId);
             f.addBody("Wrong Password");
             disconnectWithFrame(f);
