@@ -67,13 +67,17 @@ public class ConnectionsImpl implements Connections<Frame> {
         _connections.put(connectionId, connectionHandler);
     }
 
+    /**
+     * This function unsubscribes the client with connectionId from channel
+     * @param channel The channel to remove the client from
+     * @param connectionId The connection id of the client to unsubscribe
+     * @param subscriptionId The subscription id to be removed
+     * @throws NullPointerException If the subscription id doesn't exist with the given connection id
+     */
     @Override
-    public void unsubscribe(String channel, int connectionId, int subscriptionId) {
+    public void unsubscribe(String channel, int connectionId, int subscriptionId) throws NullPointerException{
         // SimpleEntry is comparable and implements a deep compare, thus using the newly created keyValPair for
-        // find and remove operations will find the required object
-        AbstractMap.SimpleEntry<Integer, Integer> keyValPair = new AbstractMap.SimpleEntry<>(connectionId,
-                subscriptionId);
-        if(_channels.get(channel).indexOf(keyValPair) == -1) return;
-        _channels.get(channel).remove(keyValPair);
+        // remove operation will find the required object
+        _channels.get(channel).remove(new AbstractMap.SimpleEntry<>(connectionId, subscriptionId));
     }
 }

@@ -81,8 +81,14 @@ public class LibraryProtocol implements StompMessagingProtocol<Frame> {
 
     private void handleUnsubscribe(Frame msg) {
         if (!checkForHeader(msg, "id", "An UNSUBSCRIBE frame must contain a subscription id")) return;
-        _connections.unsubscribe(msg.getHeader("destination"), _connectionId, Integer.parseInt(msg.getHeader("id")));
-        sendReceipt(msg);
+        try {
+            _connections.unsubscribe(msg.getHeader("destination"), _connectionId,
+                    Integer.parseInt(msg.getHeader("id")));
+            sendReceipt(msg);
+        } catch (NullPointerException ex) {
+            disconnectWithFrame(createErrorFrame("The subscription id doesn't exist"));
+        }
+
     }
 
     /**
