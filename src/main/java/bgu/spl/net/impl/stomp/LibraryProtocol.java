@@ -46,7 +46,7 @@ public class LibraryProtocol implements StompMessagingProtocol<Frame> {
     private void handleDisconnect(Frame msg) {
         sendReceipt(msg);
         _connections.disconnect(_connectionId);
-        _client.connected = false;
+        _client.setConnected(false);
         _shouldTerminate = true;
     }
 
@@ -73,14 +73,14 @@ public class LibraryProtocol implements StompMessagingProtocol<Frame> {
     }
 
     private void handleSubscribe(Frame msg) {
-        if (!checkForHeader(msg, "destination")) return;
-        if (!checkForHeader(msg, "id")) return;
+        if (!checkForHeader(msg, "destination", "No destination was given in a SUBSCRIBE frame")) return;
+        if (!checkForHeader(msg, "id", "A SUBSCRIBE frame must contain a subscription id")) return;
         _connections.subscribe(msg.getHeader("destination"), _connectionId, Integer.parseInt(msg.getHeader("id")));
         sendReceipt(msg);
     }
 
     private void handleUnsubscribe(Frame msg) {
-        if (!checkForHeader(msg, "id")) return;
+        if (!checkForHeader(msg, "id", "An UNSUBSCRIBE frame must contain a subscription id")) return;
         _connections.unsubscribe(msg.getHeader("destination"), _connectionId, Integer.parseInt(msg.getHeader("id")));
         sendReceipt(msg);
     }
@@ -146,8 +146,8 @@ public class LibraryProtocol implements StompMessagingProtocol<Frame> {
         Frame f = new Frame();
         if ((_client = clientsByLogin.get(msg.getHeader("login"))) == null) { // Is the user new?
             _client = new Client(msg.getHeader("host"), msg.getHeader("login"), msg.getHeader("passcode"));
-            clientsByLogin.put(_client.login, _client);
-        } else if (_client.connected) { // Is the user already connected?
+            clientsByLogin.put(_client.getLogin(), _client);
+        } else if (_client.isConnected()) { // Is the user already connected?
             f.setCommand("ERROR");
             f.addHeader("message", "User already logged in");
             String receiptId;
@@ -155,7 +155,7 @@ public class LibraryProtocol implements StompMessagingProtocol<Frame> {
             f.addBody("User already logged in");
             disconnectWithFrame(f);
             return;
-        } else if (!_client.passcode.equals(msg.getHeader("passcode"))) { // Is the password wrong?
+        } else if (!_client.getPasscode().equals(msg.getHeader("passcode"))) { // Is the password wrong?
             f.setCommand("ERROR");
             f.addHeader("message", "Wrong password");
             String receiptId;
@@ -166,7 +166,7 @@ public class LibraryProtocol implements StompMessagingProtocol<Frame> {
         }
         // If we got here then we have a user that needs to be connected
         f = createConnectedFrame();
-        _client.connected = true;
+        _client.setConnected(true);
         sendReceipt(msg);
         _connections.send(_connectionId, f);
     }
