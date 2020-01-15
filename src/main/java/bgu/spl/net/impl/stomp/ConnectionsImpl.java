@@ -24,8 +24,7 @@ public class ConnectionsImpl implements Connections<Frame> {
     public boolean send(int connectionId, Frame msg) {
         try {
             _connections.get(connectionId).send(msg);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             return false;
         }
         return true;
@@ -39,23 +38,24 @@ public class ConnectionsImpl implements Connections<Frame> {
 
     @Override
     public void send(String channel, Frame msg) {
-        for(AbstractMap.SimpleEntry<Integer, Integer> sub : _channels.get(channel)) {
+        for (AbstractMap.SimpleEntry<Integer, Integer> sub : _channels.get(channel)) {
             this.send(sub.getKey(), addSubscriptionId(msg, sub.getValue())); // Send the message with the subscription header
         }
     }
 
     @Override
     public void disconnect(int connectionId) {
-        for(List<AbstractMap.SimpleEntry<Integer, Integer>> topic : _channels.values()) {
-            topic.remove(connectionId);
+        for (List<AbstractMap.SimpleEntry<Integer, Integer>> topic : _channels.values()) {
+            if (topic.get(connectionId) != null)
+                topic.remove(connectionId);
         }
         _connections.remove(connectionId);
     }
 
     @Override
     public void subscribe(String channel, int connectionId, int subscriptionId) {
-        if(_channels.get(channel) == null) {
-            synchronized (this) {
+        if (_channels.get(channel) == null) {
+            synchronized (this) { // We sync on the entire object because the channel is null and we can't sync on null
                 _channels.computeIfAbsent(channel, k -> new ArrayList<>());
             }
         }
@@ -65,5 +65,19 @@ public class ConnectionsImpl implements Connections<Frame> {
     @Override
     public void connect(ConnectionHandler<Frame> connectionHandler, int connectionId) {
         _connections.put(connectionId, connectionHandler);
+    }
+
+    /**
+     * This function unsubscribes the client with connectionId from channel
+     * @param channel The channel to remove the client from
+     * @param connectionId The connection id of the client to unsubscribe
+     * @param subscriptionId The subscription id to be removed
+     * @throws NullPointerException If the subscription id doesn't exist with the given connection id
+     */
+    @Override
+    public void unsubscribe(String channel, int connectionId, int subscriptionId) throws NullPointerException{
+        // SimpleEntry is comparable and implements a deep compare, thus using the newly created keyValPair for
+        // remove operation will find the required object
+        _channels.get(channel).remove(new AbstractMap.SimpleEntry<>(connectionId, subscriptionId));
     }
 }
