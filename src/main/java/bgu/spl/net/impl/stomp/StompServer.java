@@ -12,7 +12,7 @@ public class StompServer {
         }
         Server s = null;
         if(args[1].equals("tpc")) {
-            s = Server.threadPerClient(Integer.parseInt(args[1]),
+            s = Server.threadPerClient(Integer.parseInt(args[0]),
                     () -> new LibraryProtocol(),
                     ()-> new StompEncDec(),
                     new ConnectionsImpl());
