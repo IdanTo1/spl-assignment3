@@ -46,8 +46,7 @@ public class ConnectionsImpl implements Connections<Frame> {
     @Override
     public void disconnect(int connectionId) {
         for (List<AbstractMap.SimpleEntry<Integer, Integer>> topic : _channels.values()) {
-            if (topic.get(connectionId) != null)
-                topic.remove(connectionId);
+            topic.removeIf(entry -> entry.getKey() == connectionId);
         }
         _connections.remove(connectionId);
     }
