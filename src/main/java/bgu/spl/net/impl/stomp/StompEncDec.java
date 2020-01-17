@@ -34,13 +34,12 @@ public class StompEncDec implements MessageEncoderDecoder<Frame> {
                 int mid = msg.indexOf(":", prevDelim);
                 if(mid == -1) { // No more headers
                     msgPart++;
-                    continue;
                 }
-                parsed.addHeader(msg.substring(prevDelim + 1, mid), msg.substring(mid + 1, delim));
+                else parsed.addHeader(msg.substring(prevDelim + 1, mid), msg.substring(mid + 1, delim));
             }
 
         } while (delim < msg.length() && msgPart < BODY_PART);
-        parsed.addBody(msg.substring(prevDelim + 1));
+        parsed.addBody(msg.substring(prevDelim + 2));
         return parsed;
     }
 
