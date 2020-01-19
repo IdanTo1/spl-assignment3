@@ -15,27 +15,27 @@ public class StompEncDec implements MessageEncoderDecoder<Frame> {
     private static final int BODY_PART = 2;
 
     /**
-     *   Converts a String to the Frame object representing it
+     * Converts a String to the Frame object representing it
+     *
      * @param msg The message as a string
      * @return The Frame representation
      */
     private Frame parseMessage(String msg) {
         int delim = 0, prevDelim = 0;
         int msgPart = COMMAND_PART;
+        int bodyIndex = msg.indexOf("\n\n");
         Frame parsed = null;
         do {
             prevDelim = delim;
-            delim = msg.indexOf(delimiter, prevDelim+1); // Find the end of the next line
+            delim = msg.indexOf(delimiter, prevDelim + 1); // Find the end of the next line
             if (msgPart == COMMAND_PART) { // The command
                 parsed = new Frame(msg.substring(0, delim));
                 msgPart++;
-            }
-            else if (msgPart == HEADERS_PART) { // headers
+            } else if (msgPart == HEADERS_PART) { // headers
                 int mid = msg.indexOf(":", prevDelim);
-                if(mid == -1) { // No more headers
+                if (mid == -1 || mid > bodyIndex) { // No more headers
                     msgPart++;
-                }
-                else parsed.addHeader(msg.substring(prevDelim + 1, mid), msg.substring(mid + 1, delim));
+                } else parsed.addHeader(msg.substring(prevDelim + 1, mid), msg.substring(mid + 1, delim));
             }
 
         } while (delim < msg.length() && msgPart < BODY_PART);
